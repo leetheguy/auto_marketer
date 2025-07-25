@@ -1,30 +1,32 @@
+// lib/text/text_screen.dart
+
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
-import 'notes_provider.dart';
+import 'text_provider.dart'; // Updated import
 
-class NotesScreen extends ConsumerWidget {
-  const NotesScreen({super.key});
+// Renamed from NotesScreen to TextScreen
+class TextScreen extends ConsumerWidget {
+  const TextScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // 1. Watch the provider. The UI will rebuild when the stream emits new data.
-    final notesAsyncValue = ref.watch(notesStreamProvider);
+    // Updated provider
+    final textAsyncValue = ref.watch(textStreamProvider); 
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Notes'),
+        title: const Text('Text Items'), // Updated title
       ),
-      body: notesAsyncValue.when(
-        // 2. Use the 'when' block to handle all states of the async data.
-        data: (notes) => ListView.builder(
-          itemCount: notes.length,
+      body: textAsyncValue.when(
+        data: (textItems) => ListView.builder( // Renamed variable
+          itemCount: textItems.length,
           itemBuilder: (context, index) {
-            final note = notes[index];
+            final textItem = textItems[index]; // Renamed variable
             return ListTile(
-              title: Text(note.title),
-              subtitle: Text(note.content),
+              title: Text(textItem.title),
+              subtitle: Text(textItem.content),
             );
           },
         ),
@@ -33,20 +35,19 @@ class NotesScreen extends ConsumerWidget {
       ),
       floatingActionButton: FloatingActionButton(
         child: const Icon(Icons.add),
-        onPressed: () => _showCreateNoteDialog(context),
+        onPressed: () => _showCreateTextDialog(context), // Renamed method
       ),
     );
   }
 
-  // 3. A dialog to input new note data.
-  void _showCreateNoteDialog(BuildContext context) {
+  void _showCreateTextDialog(BuildContext context) { // Renamed method
     final titleController = TextEditingController();
     final contentController = TextEditingController();
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('New Note'),
+        title: const Text('New Text Item'), // Updated title
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -58,7 +59,6 @@ class NotesScreen extends ConsumerWidget {
           TextButton(
             child: const Text('Save'),
             onPressed: () {
-              // 4. On save, send the data to the n8n webhook.
               _sendToN8n(titleController.text, contentController.text);
               Navigator.of(context).pop();
             },
@@ -68,10 +68,9 @@ class NotesScreen extends ConsumerWidget {
     );
   }
 
-  // 5. The function that makes the HTTP POST request to n8n.
   Future<void> _sendToN8n(String title, String content) async {
-    // final url = Uri.parse('https://n8n-service-eumn.onrender.com/webhook-test/note-creator');
-    final url = Uri.parse('https://n8n-service-eumn.onrender.com/webhook/note-creator');
+    // Note: You may want to update this webhook path in n8n for consistency
+    final url = Uri.parse('https://n8n-service-eumn.onrender.com/webhook-test/note-creator');
     await http.post(
       url,
       headers: {'Content-Type': 'application/json'},

@@ -1,17 +1,19 @@
+// lib/main.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart'; // <-- ADD THIS
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
-// UNCOMMENTED: Import the screen we just built.
-import 'notes/notes_screen.dart'; 
+import 'text/text_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  await dotenv.load(fileName: ".env"); // <-- ADD THIS to load the file
+
   await Supabase.initialize(
-    // Ensure these are your actual Supabase URL and anon key.
-    url: 'https://ibbwohrcuxvugizaiodp.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImliYndvaHJjdXh2dWdpemFpb2RwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIzMjA2OTUsImV4cCI6MjA2Nzg5NjY5NX0.wVVW88M2s7AtIfajZCb6RMfdbCWVgzSn9RlxFpyx56k',
+    // Use the variables from the .env file
+    url: dotenv.env['SUPABASE_URL']!,
+    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
 
   runApp(
@@ -29,8 +31,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Thin Client App',
       theme: ThemeData.dark(useMaterial3: true),
-      // CHANGED: Set NotesScreen as the home screen.
-      home: const NotesScreen(),
+      home: const TextScreen(),
     );
   }
 }
