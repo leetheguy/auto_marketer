@@ -1,19 +1,19 @@
-// lib/main.dart
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart'; // <-- ADD THIS
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'text/text_screen.dart';
+import 'config.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await dotenv.load(fileName: ".env"); // <-- ADD THIS to load the file
+  // Initialize our config first. This loads the .env file.
+  await AppConfig.initialize();
 
+  // Now we can safely use the config variables
   await Supabase.initialize(
-    // Use the variables from the .env file
-    url: dotenv.env['SUPABASE_URL']!,
-    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
+    url: AppConfig.supabaseUrl,
+    anonKey: AppConfig.supabaseAnonKey,
   );
 
   runApp(
@@ -22,6 +22,8 @@ Future<void> main() async {
     ),
   );
 }
+
+// ... MyApp class and supabase global variable remain the same
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});

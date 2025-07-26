@@ -4,29 +4,79 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
-import 'text_provider.dart'; // Updated import
+import 'text_provider.dart'; // We'll rename this file later
+import '../config.dart';
+import '../editor/editor_screen.dart';
 
-// Renamed from NotesScreen to TextScreen
 class TextScreen extends ConsumerWidget {
   const TextScreen({super.key});
+  
+  
+
+  Future<void> _createNewArticle(BuildContext context, WidgetRef ref) async {
+    final url = Uri.parse(AppConfig.getWebhookUrl('create-article'));
+    try {
+      final response = await http.post(url);
+      debugLog('N8N RAW RESPONSE: ${response.body}');
+
+      if (response.statusCode == 200) {
+        // --- FINAL, CORRECTED PARSING ---
+
+        // The response is a single object, so we decode directly to a Map.
+        final Map<String, dynamic> articleData = json.decode(response.body);
+
+        // Now we can access the ID directly from the map.
+        final String contentItemId = articleData['content_item_id'];
+        debugLog('New content item created with ID: $contentItemId');
+
+        // --- END OF PARSING LOGIC ---
+
+        ref.invalidate(articlesProvider);
+
+        if (context.mounted) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => EditorScreen(contentItemId: contentItemId),
+            ),
+          );
+        }
+      } else {
+        debugLog('Failed to create article. Status: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugLog('Error calling create-article webhook: $e');
+    }
+  }
+
+
+
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Updated provider
-    final textAsyncValue = ref.watch(textStreamProvider); 
+    // UPDATED: Watch the new articlesProvider
+    final articlesAsyncValue = ref.watch(articlesProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Text Items'), // Updated title
+        title: const Text('Articles'), // Updated title
       ),
-      body: textAsyncValue.when(
-        data: (textItems) => ListView.builder( // Renamed variable
-          itemCount: textItems.length,
+      // UPDATED: Use the new variable
+      body: articlesAsyncValue.when(
+        data: (articles) => ListView.builder(
+          itemCount: articles.length,
           itemBuilder: (context, index) {
-            final textItem = textItems[index]; // Renamed variable
+            final article = articles[index];
             return ListTile(
-              title: Text(textItem.title),
-              subtitle: Text(textItem.content),
+              title: Text(article.title),
+              subtitle: Text(article.subtitle),
+              leading: const Icon(Icons.article_outlined),
+              onTap: () { // <-- ADD THIS onTap HANDLER
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => EditorScreen(contentItemId: article.contentItemId),
+                  ),
+                );
+              },
             );
           },
         ),
@@ -35,46 +85,11 @@ class TextScreen extends ConsumerWidget {
       ),
       floatingActionButton: FloatingActionButton(
         child: const Icon(Icons.add),
-        onPressed: () => _showCreateTextDialog(context), // Renamed method
+        onPressed: () => _createNewArticle(context, ref), // <-- UPDATED
       ),
     );
   }
 
-  void _showCreateTextDialog(BuildContext context) { // Renamed method
-    final titleController = TextEditingController();
-    final contentController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('New Text Item'), // Updated title
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: titleController, decoration: const InputDecoration(labelText: 'Title')),
-            TextField(controller: contentController, decoration: const InputDecoration(labelText: 'Content')),
-          ],
-        ),
-        actions: [
-          TextButton(
-            child: const Text('Save'),
-            onPressed: () {
-              _sendToN8n(titleController.text, contentController.text);
-              Navigator.of(context).pop();
-            },
-          )
-        ],
-      ),
-    );
-  }
-
-  Future<void> _sendToN8n(String title, String content) async {
-    // Note: You may want to update this webhook path in n8n for consistency
-    final url = Uri.parse('https://n8n-service-eumn.onrender.com/webhook-test/note-creator');
-    await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode({'title': title, 'content': content}),
-    );
-  }
+  // The _showCreateTextDialog and _sendToN8n methods are now outdated.
+  // We can leave them here for a moment, but we will replace them.
 }

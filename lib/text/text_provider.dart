@@ -3,26 +3,39 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../main.dart';
 
-// Renamed from Note to TextItem
-class TextItem {
-  TextItem({required this.id, required this.title, required this.content});
+// 1. A simple model to match the data from our database function.
+class ArticleListItem {
+  ArticleListItem({
+    required this.id,
+    required this.contentItemId,
+    required this.title,
+    required this.subtitle,
+  });
 
   final String id;
+  final String contentItemId;
   final String title;
-  final String content;
+  final String subtitle;
 
-  factory TextItem.fromJson(Map<String, dynamic> map) {
-    return TextItem(
-      id: map['id'].toString(),
-      title: map['title'] ?? '',
-      content: map['content'] ?? '',
+  factory ArticleListItem.fromMap(Map<String, dynamic> map) {
+    return ArticleListItem(
+      id: map['article_id'] as String,
+      contentItemId: map['content_item_id'] as String, 
+      title: map['title'] ?? 'Untitled',
+      subtitle: map['subtitle'] ?? '',
     );
   }
 }
 
-// Renamed from notesStreamProvider to textStreamProvider
-// and updated to read from the 'text' table.
-final textStreamProvider = StreamProvider<List<TextItem>>((ref) {
-  final stream = supabase.from('text').stream(primaryKey: ['id']);
-  return stream.map((maps) => maps.map((map) => TextItem.fromJson(map)).toList());
+// 2. A FutureProvider that calls our new database function.
+final articlesProvider = FutureProvider<List<ArticleListItem>>((ref) async {
+  // Call the RPC and get the raw data
+  final response = await supabase.rpc('get_articles_with_latest_text');
+
+  // Convert the raw list of maps into a list of our typed ArticleListItem objects
+  final items = (response as List).map((map) {
+    return ArticleListItem.fromMap(map);
+  }).toList();
+
+  return items;
 });
