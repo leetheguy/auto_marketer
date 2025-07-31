@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'text/text_screen.dart';
 import 'config.dart';
+import 'home/home_screen.dart'; // Import the new home screen
+
+// This is a global instance of the Supabase client
+final supabase = Supabase.instance.client;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,19 +26,15 @@ Future<void> main() async {
   );
 }
 
-// ... MyApp class and supabase global variable remain the same
-
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Thin Client App',
+      title: 'Auto Marketer',
       theme: ThemeData.dark(useMaterial3: true),
-      home: const TextScreen(),
+      home: const HomeScreen(), // Set HomeScreen as the home page
     );
   }
 }
-
-final supabase = Supabase.instance.client;

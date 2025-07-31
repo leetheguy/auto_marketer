@@ -1,15 +1,13 @@
-// lib/config.dart
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 // A helper function for conditional printing that won't show warnings.
 void debugLog(Object? message) {
   if (!kReleaseMode) {
-    // ignore: avoid_print
-    print(message);
+    debugLog(message);
   }
 }
+
 
 class AppConfig {
   // --- Secrets (loaded from .env) ---
@@ -19,8 +17,7 @@ class AppConfig {
   // --- Webhook Configuration ---
   
   // Manually set this to true to use test webhooks.
-  // static const bool useTestMode = true;
-  static const bool useTestMode = false; 
+  static const bool useTestMode = true; 
 
   static const String _baseUrl = 'https://n8n-service-eumn.onrender.com';
   static const String _prodPath = 'webhook';
@@ -29,7 +26,7 @@ class AppConfig {
   // The single source of truth for all command names
   static const Set<String> webhookCommands = {
     'create-article',
-    // 'create-idea',
+    'create-idea',
     // 'archive-article',
   };
 
@@ -53,6 +50,5 @@ class AppConfig {
   }
 
   // --- App Behavior ---
-
-  static const int editorDebounceMilliseconds = 2000;
+  static const int editorDebounceMilliseconds = 500;
 }

@@ -11,8 +11,6 @@ import '../editor/editor_screen.dart';
 class TextScreen extends ConsumerWidget {
   const TextScreen({super.key});
   
-  
-
   Future<void> _createNewArticle(BuildContext context, WidgetRef ref) async {
     final url = Uri.parse(AppConfig.getWebhookUrl('create-article'));
     try {
