@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:multi_split_view/multi_split_view.dart';
 import '../config.dart';
 import '../main.dart';
-import '../text/text_provider.dart';
+import '../common/list_provider.dart';
 
 // Enum to manage the different states of our save indicator.
 enum SaveStatus { unsaved, saving, saved }
@@ -37,7 +37,6 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     _contentController = TextEditingController();
     _fetchInitialData();
 
-    // Add listeners to trigger the debouncer and update the preview in real-time
     _titleController.addListener(_onTextChanged);
     _contentController.addListener(_onTextChanged);
   }
@@ -76,7 +75,6 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
   }
 
   void _onTextChanged() {
-    // This setState call ensures the markdown preview updates as you type.
     setState(() {}); 
 
     if (_saveStatus != SaveStatus.saving) {
@@ -102,7 +100,9 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
         'p_title': _titleController.text,
         'p_content': _contentController.text,
       });
-      ref.invalidate(articlesProvider);
+      // Invalidate both providers so lists are fresh when we navigate back.
+      ref.invalidate(listProvider(ContentType.article));
+      ref.invalidate(listProvider(ContentType.idea));
       debugLog('Changes saved.');
       
       if (mounted) {
@@ -128,11 +128,11 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Column( // Main layout is now a Column
+          : Column(
               children: [
-                _buildMenuBar(), // Menu bar is always at the top
+                _buildMenuBar(),
                 const Divider(height: 1),
-                Expanded( // The rest of the screen fills the available space
+                Expanded(
                   child: LayoutBuilder(
                     builder: (context, constraints) {
                       if (constraints.maxWidth > 700) {
@@ -148,9 +148,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     );
   }
 
-  // Widget for the side-by-side desktop/tablet layout with a slider
   Widget _buildWideLayout() {
-    // Using the correct syntax with initialAreas and Area.
     return MultiSplitView(
       initialAreas: [
         Area(builder: (context, area) => _buildEditorColumn()),
@@ -159,21 +157,16 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     );
   }
 
-  // Widget for the toggled mobile layout
   Widget _buildNarrowLayout() {
-    // Just show one or the other based on the toggle
     return _showPreview ? _buildPreviewColumn() : _buildEditorColumn();
   }
 
-  // The menu bar for all layouts
   Widget _buildMenuBar() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8.0),
       child: Row(
         children: [
-          // This is where the magic wand and other buttons will go.
-          // For now, we just have the preview toggle.
-          const Spacer(), // Pushes the button to the right
+          const Spacer(),
           IconButton(
             tooltip: _showPreview ? 'Show Editor' : 'Show Preview',
             icon: Icon(_showPreview ? Icons.edit : Icons.visibility),
@@ -188,7 +181,6 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     );
   }
 
-  // The reusable editor part of the UI
   Widget _buildEditorColumn() {
     return Stack(
       children: [
@@ -196,24 +188,40 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
-              TextField(
-                controller: _titleController,
-                decoration: const InputDecoration(
-                  hintText: 'Title',
-                  border: InputBorder.none,
+              // Styled Title TextField
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.white.withOpacity(0.5), width: 1),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              const SizedBox(height: 8),
-              Expanded(
                 child: TextField(
-                  controller: _contentController,
+                  controller: _titleController,
                   decoration: const InputDecoration(
-                    hintText: 'Start writing...',
+                    hintText: 'Title',
                     border: InputBorder.none,
                   ),
-                  maxLines: null,
-                  expands: true,
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Styled Content TextField
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.white.withOpacity(0.5), width: 1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: TextField(
+                    controller: _contentController,
+                    decoration: const InputDecoration(
+                      hintText: 'Start writing...',
+                      border: InputBorder.none,
+                    ),
+                    maxLines: null,
+                    expands: true,
+                  ),
                 ),
               ),
             ],
@@ -224,7 +232,6 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     );
   }
 
-  // The reusable preview part of the UI
   Widget _buildPreviewColumn() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -247,7 +254,6 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     );
   }
 
-  // The saved indicator widget
   Widget _buildSavedIndicator() {
     return Align(
       alignment: Alignment.bottomRight,

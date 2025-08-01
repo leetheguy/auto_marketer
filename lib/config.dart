@@ -4,7 +4,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 // A helper function for conditional printing that won't show warnings.
 void debugLog(Object? message) {
   if (!kReleaseMode) {
-    debugLog(message);
+    // ignore: avoid_print
+    print(message);
   }
 }
 
@@ -17,7 +18,7 @@ class AppConfig {
   // --- Webhook Configuration ---
   
   // Manually set this to true to use test webhooks.
-  static const bool useTestMode = true; 
+  static const bool useTestMode = false; 
 
   static const String _baseUrl = 'https://n8n-service-eumn.onrender.com';
   static const String _prodPath = 'webhook';
