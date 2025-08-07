@@ -20,7 +20,7 @@ class AppConfig {
   // Manually set this to true to use test webhooks.
   static const bool useTestMode = false; 
 
-  static const String _baseUrl = 'https://n8n-service-eumn.onrender.com';
+  static const String _baseUrl = 'https://n8n.leenathan.com';
   static const String _prodPath = 'webhook';
   static const String _testPath = 'webhook-test';
 

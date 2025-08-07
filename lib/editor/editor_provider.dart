@@ -50,10 +50,12 @@ class EditorNotifier extends AutoDisposeFamilyNotifier<EditorState, String> {
   }
 
   Future<void> _fetchInitialData() async {
+    // ADDED: Log the ID we are trying to fetch.
+    debugLog('Fetching initial data for content_item_id: $arg');
     try {
       final response = await supabase.rpc(
-        'get_latest_text_version',
-        params: {'p_content_item_id': arg}, // 'arg' is the contentItemId
+        'get_latest_content_version',
+        params: {'p_content_item_id': arg}, // 'arg' is the contentItemId from the family
       );
       
       if (response.isNotEmpty) {
@@ -64,7 +66,8 @@ class EditorNotifier extends AutoDisposeFamilyNotifier<EditorState, String> {
           isLoading: false,
         );
       } else {
-        state = state.copyWith(isLoading: false);
+        debugLog('No content version found for this item.');
+        state = state.copyWith(isLoading: false, title: 'New Item', content: '');
       }
     } catch (e) {
       debugLog('Error fetching initial text: $e');
@@ -91,7 +94,7 @@ class EditorNotifier extends AutoDisposeFamilyNotifier<EditorState, String> {
     state = state.copyWith(saveStatus: SaveStatus.saving);
 
     try {
-      await supabase.rpc('upsert_text_version', params: {
+      await supabase.rpc('upsert_content_version', params: {
         'p_content_item_id': arg,
         'p_title': state.title,
         'p_content': state.content,
