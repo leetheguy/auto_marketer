@@ -19,8 +19,8 @@ class ActionState {
   factory ActionState.fromMap(Map<String, dynamic> map) {
     return ActionState(
       id: map['id'] as int,
-      label: map['action_label'] as String,
-      command: map['action_command'] as String,
+      label: map['label'] as String, // Corrected from 'action_label'
+      command: map['command'] as String, // Corrected from 'action_command'
     );
   }
 }
@@ -33,12 +33,11 @@ final actionsProvider = StreamProvider.family<List<ActionState>, String>((ref, c
   Future<void> fetchActions() async {
     try {
       final response = await supabase.rpc(
-        'get_item_states',
+        'get_item_actions', // This is the correct function
         params: {'p_content_item_id': contentItemId},
       );
 
       final items = (response as List)
-          .where((map) => map['is_action'] == true)
           .map((map) => ActionState.fromMap(map))
           .toList();
       
@@ -62,7 +61,6 @@ final actionsProvider = StreamProvider.family<List<ActionState>, String>((ref, c
     event: PostgresChangeEvent.all,
     schema: 'public',
     table: 'content_item_states',
-    // Correctly construct the filter object.
     filter: PostgresChangeFilter(
       type: PostgresChangeFilterType.eq,
       column: 'content_item_id',

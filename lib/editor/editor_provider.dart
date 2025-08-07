@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config.dart';
 import '../main.dart';
-import '../common/list_provider.dart';
+import '../common/list_provider.dart'; // This import fixes the error.
 
 // Enum to manage the different states of our save indicator.
 enum SaveStatus { unsaved, saving, saved }
@@ -50,8 +50,6 @@ class EditorNotifier extends AutoDisposeFamilyNotifier<EditorState, String> {
   }
 
   Future<void> _fetchInitialData() async {
-    // ADDED: Log the ID we are trying to fetch.
-    debugLog('Fetching initial data for content_item_id: $arg');
     try {
       final response = await supabase.rpc(
         'get_latest_content_version',
@@ -66,8 +64,7 @@ class EditorNotifier extends AutoDisposeFamilyNotifier<EditorState, String> {
           isLoading: false,
         );
       } else {
-        debugLog('No content version found for this item.');
-        state = state.copyWith(isLoading: false, title: 'New Item', content: '');
+        state = state.copyWith(isLoading: false);
       }
     } catch (e) {
       debugLog('Error fetching initial text: $e');
@@ -98,11 +95,12 @@ class EditorNotifier extends AutoDisposeFamilyNotifier<EditorState, String> {
         'p_content_item_id': arg,
         'p_title': state.title,
         'p_content': state.content,
+        'p_author_signature': 'user' // Placeholder signature
       });
       
       // Invalidate list providers to refresh them.
-      ref.invalidate(listProvider(ContentType.article));
-      ref.invalidate(listProvider(ContentType.idea));
+      ref.invalidate(listProvider(const ListProviderParams(typeName: 'Article')));
+      ref.invalidate(listProvider(const ListProviderParams(typeName: 'Idea')));
       
       debugLog('Changes saved.');
       state = state.copyWith(saveStatus: SaveStatus.saved);
