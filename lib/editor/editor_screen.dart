@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import '../config.dart';
 import 'action_provider.dart';
 import 'editor_provider.dart';
+import '../workflow/workflow_models.dart'; // Import the workflow models
 
 class EditorScreen extends ConsumerStatefulWidget {
   const EditorScreen({
@@ -28,7 +29,6 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
   @override
   void initState() {
     super.initState();
-    // Initialize controllers. The provider will populate them via the build method.
     _titleController = TextEditingController();
     _contentController = TextEditingController();
   }
@@ -40,7 +40,6 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     super.dispose();
   }
   
-  // Action execution logic remains here as it's a UI concern.
   Future<void> _executeAction(String command) async {
     final url = AppConfig.getWebhookUrl(command);
     try {
@@ -51,6 +50,8 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
       );
       if (response.statusCode == 200) {
         debugLog('Action $command executed successfully.');
+        // Invalidate the provider to refetch the actions.
+        ref.invalidate(actionsProvider(widget.contentItemId));
       } else {
         debugLog('Failed to execute action $command. Status: ${response.statusCode}');
       }
@@ -61,12 +62,9 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Watch the provider for state changes.
     final editorState = ref.watch(editorProvider(widget.contentItemId));
     final editorNotifier = ref.read(editorProvider(widget.contentItemId).notifier);
 
-    // This listener ensures that we update the text fields only when the
-    // state from the provider actually changes, preventing cursor jumps.
     ref.listen(editorProvider(widget.contentItemId), (_, next) {
       if (_titleController.text != next.title) {
         _titleController.text = next.title;

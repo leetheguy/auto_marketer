@@ -39,14 +39,16 @@ class ListScreen extends ConsumerWidget {
                 title: Text(item.title),
                 subtitle: Text(item.subtitle),
                 onTap: () {
-                  // This is now a robust check based on the item's type.
+                  // This is the core of our hierarchical navigation.
                   if (item.typeName == 'Project') {
+                    // If the item is a Project, navigate to another ListScreen showing its children.
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (context) => ListScreen(parentId: item.id),
                       ),
                     );
                   } else {
+                    // Otherwise, it's a regular content item, so navigate to the editor.
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (context) => EditorScreen(contentItemId: item.id),

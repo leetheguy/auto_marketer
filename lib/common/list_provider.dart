@@ -1,16 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../main.dart';
-
-// A map to convert icon names from the DB to actual Flutter Icons.
-const Map<String, IconData> iconMap = {
-  'folder_special_outlined': Icons.folder_special_outlined,
-  'lightbulb_outline': Icons.lightbulb_outline,
-  'article_outlined': Icons.article_outlined,
-  'movie_outlined': Icons.movie_outlined,
-  'campaign_outlined': Icons.campaign_outlined,
-  'default': Icons.help_outline,
-};
+import '../workflow/workflow_models.dart';
+import '../workflow/workflow_provider.dart';
 
 // A simple data model for any item that can appear in a list.
 class ListItem {
@@ -20,7 +12,7 @@ class ListItem {
     required this.title,
     required this.subtitle,
     required this.icon,
-    required this.typeName, // Added typeName
+    required this.typeName,
   });
 
   final String id;
@@ -28,17 +20,23 @@ class ListItem {
   final String title;
   final String subtitle;
   final IconData icon;
-  final String typeName; // Added typeName
+  final String typeName;
 
-  factory ListItem.fromMap(Map<String, dynamic> map) {
-    final iconName = map['icon_name'] as String? ?? 'default';
+  factory ListItem.fromMap(Map<String, dynamic> map, Workflow workflow) {
+    final typeName = map['type_name'] as String;
+    // Find the type info from the central workflow to get the correct icon.
+    final typeInfo = workflow.types.firstWhere(
+      (t) => t.name == typeName,
+      orElse: () => workflow.types.first, // Fallback
+    );
+
     return ListItem(
       id: map['item_id'] as String,
       parentId: map['parent_id'] as String?,
       title: map['title'] ?? 'Untitled',
       subtitle: map['subtitle'] ?? '',
-      icon: iconMap[iconName] ?? Icons.help_outline,
-      typeName: map['type_name'] as String, // Added typeName
+      icon: typeInfo.icon,
+      typeName: typeName,
     );
   }
 }
@@ -67,6 +65,7 @@ class ListProviderParams {
 
 // A "family" provider that can fetch different types of content lists.
 final listProvider = FutureProvider.family<List<ListItem>, ListProviderParams>((ref, params) async {
+  final workflow = await ref.watch(workflowProvider.future);
   
   String rpcName;
   Map<String, dynamic> rpcParams;
@@ -84,7 +83,7 @@ final listProvider = FutureProvider.family<List<ListItem>, ListProviderParams>((
   final response = await supabase.rpc(rpcName, params: rpcParams);
 
   final items = (response as List).map((map) {
-    return ListItem.fromMap(map);
+    return ListItem.fromMap(map, workflow);
   }).toList();
 
   return items;

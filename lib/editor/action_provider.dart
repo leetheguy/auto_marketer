@@ -1,83 +1,26 @@
-import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../main.dart';
-import '../config.dart';
+import '../workflow/workflow_models.dart';
+import '../workflow/workflow_provider.dart';
 
-// A simple data model for an action state.
-class ActionState {
-  ActionState({
-    required this.id,
-    required this.label,
-    required this.command,
-  });
+// This provider now simply reads the central workflow and the current content item's state
+// to determine the available actions.
+final actionsProvider = FutureProvider.family<List<WorkflowAction>, String>((ref, contentItemId) async {
+  // Get the fully parsed workflow definition.
+  final workflow = await ref.watch(workflowProvider.future);
 
-  final int id;
-  final String label;
-  final String command;
+  // Fetch the specific content item to know its current type and state.
+  final contentItemResponse = await supabase
+      .from('content_items')
+      .select('type_name, state_name')
+      .eq('id', contentItemId)
+      .single();
 
-  factory ActionState.fromMap(Map<String, dynamic> map) {
-    return ActionState(
-      id: map['id'] as int,
-      label: map['label'] as String, // Corrected from 'action_label'
-      command: map['command'] as String, // Corrected from 'action_command'
-    );
-  }
-}
+  final typeName = contentItemResponse['type_name'] as String;
+  final stateName = contentItemResponse['state_name'] as String;
 
-// A "family" StreamProvider that provides a real-time stream of available actions
-// for a specific content item.
-final actionsProvider = StreamProvider.family<List<ActionState>, String>((ref, contentItemId) {
-  final controller = StreamController<List<ActionState>>();
+  // Use the helper method on our Workflow object to get the actions.
+  final actions = workflow.getActionsFor(typeName, stateName);
 
-  Future<void> fetchActions() async {
-    try {
-      final response = await supabase.rpc(
-        'get_item_actions', // This is the correct function
-        params: {'p_content_item_id': contentItemId},
-      );
-
-      final items = (response as List)
-          .map((map) => ActionState.fromMap(map))
-          .toList();
-      
-      if (!controller.isClosed) {
-        controller.add(items);
-      }
-    } catch (e) {
-      debugLog('Error fetching actions: $e');
-      if (!controller.isClosed) {
-        controller.addError(e);
-      }
-    }
-  }
-
-  // Fetch the initial data.
-  fetchActions();
-
-  // Set up the Realtime subscription using the correct modern syntax.
-  final channel = supabase.channel('item-states:$contentItemId');
-  channel.onPostgresChanges(
-    event: PostgresChangeEvent.all,
-    schema: 'public',
-    table: 'content_item_states',
-    filter: PostgresChangeFilter(
-      type: PostgresChangeFilterType.eq,
-      column: 'content_item_id',
-      value: contentItemId,
-    ),
-    callback: (payload) {
-      debugLog('Realtime update received for item states. Refetching.');
-      fetchActions();
-    },
-  ).subscribe();
-
-  // When the provider is disposed, close the controller and unsubscribe from the channel.
-  ref.onDispose(() {
-    debugLog('Disposing actionsProvider and unsubscribing from channel.');
-    supabase.removeChannel(channel);
-    controller.close();
-  });
-
-  return controller.stream;
+  return actions;
 });
