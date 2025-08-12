@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config.dart';
 import '../main.dart';
 import '../common/list_provider.dart';
-import '../workflow/workflow_models.dart'; // This import fixes the error.
+import '../workflow/workflow_models.dart';
 
 // The data model for our editor's state.
 class EditorState {

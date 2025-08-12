@@ -3,24 +3,35 @@ import '../main.dart';
 import '../workflow/workflow_models.dart';
 import '../workflow/workflow_provider.dart';
 
-// This provider now simply reads the central workflow and the current content item's state
-// to determine the available actions.
-final actionsProvider = FutureProvider.family<List<WorkflowAction>, String>((ref, contentItemId) async {
-  // Get the fully parsed workflow definition.
-  final workflow = await ref.watch(workflowProvider.future);
+// A simple data model for the current content item's data.
+class ContentItemData {
+  const ContentItemData({required this.typeName, required this.stateName});
+  final String typeName;
+  final String stateName;
+}
 
-  // Fetch the specific content item to know its current type and state.
-  final contentItemResponse = await supabase
+// A provider to fetch the data for the current content item.
+final currentContentItemProvider =
+    FutureProvider.family<ContentItemData, String>((ref, contentItemId) async {
+  final response = await supabase
       .from('content_items')
       .select('type_name, state_name')
       .eq('id', contentItemId)
       .single();
 
-  final typeName = contentItemResponse['type_name'] as String;
-  final stateName = contentItemResponse['state_name'] as String;
+  return ContentItemData(
+    typeName: response['type_name'] as String,
+    stateName: response['state_name'] as String,
+  );
+});
 
-  // Use the helper method on our Workflow object to get the actions.
-  final actions = workflow.getActionsFor(typeName, stateName);
+// The actionsProvider is now a FutureProvider to correctly handle async dependencies.
+final actionsProvider =
+    FutureProvider.family<List<WorkflowAction>, String>((ref, contentItemId) async {
+  // Await the results of our two async dependencies.
+  final workflow = await ref.watch(workflowProvider.future);
+  final itemData = await ref.watch(currentContentItemProvider(contentItemId).future);
 
-  return actions;
+  // Now that we have the data, we can perform the lookup.
+  return workflow.getActionsFor(itemData.typeName, itemData.stateName);
 });

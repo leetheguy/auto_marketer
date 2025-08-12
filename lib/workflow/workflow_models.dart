@@ -10,7 +10,7 @@ const Map<String, IconData> iconMap = {
   'default': Icons.help_outline,
 };
 
-// Enum to manage the different states of our save indicator. (MOVED HERE)
+// Enum to manage the different states of our save indicator.
 enum SaveStatus { unsaved, saving, saved }
 
 // Represents a single action in the workflow.
@@ -20,82 +20,77 @@ class WorkflowAction {
   final String command;
 }
 
-// Represents a single state in the workflow.
+// Represents a single state in the workflow, which contains its available actions.
 class WorkflowState {
-  const WorkflowState({required this.name});
+  const WorkflowState({required this.name, required this.actions});
   final String name;
+  final List<WorkflowAction> actions;
 }
 
-// Represents a single content type in the workflow.
+// Represents a single content type in the workflow, which contains its possible states.
 class WorkflowType {
   const WorkflowType({
     required this.name,
     required this.icon,
     required this.displayOrder,
+    required this.states,
   });
   final String name;
   final IconData icon;
   final int displayOrder;
+  final List<WorkflowState> states;
 }
 
 // Represents the entire parsed workflow definition.
 class Workflow {
   const Workflow({
     required this.types,
-    required this.states,
-    required this.actions,
-    required this.rules,
   });
 
   final List<WorkflowType> types;
-  final List<WorkflowState> states;
-  final List<WorkflowAction> actions;
-  final Map<String, Map<String, List<WorkflowAction>>> rules; // type -> state -> actions
 
-  // Factory to parse the raw JSON from Supabase into our structured model.
+  // Factory to parse the new nested JSON structure.
   factory Workflow.fromJson(Map<String, dynamic> json) {
     final workflowData = json['workflow'];
 
     final types = (workflowData['types'] as List).map((typeJson) {
       final iconName = typeJson['icon_name'] as String? ?? 'default';
+      
+      final states = (typeJson['states'] as List).map((stateJson) {
+        final actions = (stateJson['actions'] as List).map((actionJson) {
+          return WorkflowAction(
+            label: actionJson['label'],
+            command: actionJson['command'],
+          );
+        }).toList();
+        
+        return WorkflowState(
+          name: stateJson['name'],
+          actions: actions,
+        );
+      }).toList();
+
       return WorkflowType(
         name: typeJson['name'],
         icon: iconMap[iconName] ?? Icons.help_outline,
         displayOrder: typeJson['display_order'],
+        states: states,
       );
     }).toList()
       ..sort((a, b) => a.displayOrder.compareTo(b.displayOrder));
 
-    final states = (workflowData['states'] as List)
-        .map((stateJson) => WorkflowState(name: stateJson['name']))
-        .toList();
+    return Workflow(types: types);
+  }
 
-    final actions = (workflowData['actions'] as List)
-        .map((actionJson) => WorkflowAction(
-              label: actionJson['label'],
-              command: actionJson['command'],
-            ))
-        .toList();
-
-    // Parse the rules into a nested map for easy lookup: rules[typeName][stateName]
-    final rules = <String, Map<String, List<WorkflowAction>>>{};
-    for (var ruleJson in (workflowData['rules'] as List)) {
-      final typeName = ruleJson['type'];
-      final stateName = ruleJson['state'];
-      final actionLabel = ruleJson['action'];
-
-      final action = actions.firstWhere((a) => a.label == actionLabel);
-
-      rules.putIfAbsent(typeName, () => {});
-      rules[typeName]!.putIfAbsent(stateName, () => []);
-      rules[typeName]![stateName]!.add(action);
+  // Helper method to easily find the available actions for a given type and state.
+  List<WorkflowAction> getActionsFor(String typeName, String stateName) {
+    try {
+      final type = types.firstWhere((t) => t.name == typeName);
+      final state = type.states.firstWhere((s) => s.name == stateName);
+      return state.actions;
+    } catch (e) {
+      // If no matching type or state is found, return an empty list.
+      return [];
     }
-
-    return Workflow(
-      types: types,
-      states: states,
-      actions: actions,
-      rules: rules,
-    );
   }
 }

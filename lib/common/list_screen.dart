@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../editor/editor_screen.dart';
+import '../editor/editor_screen.dart'; // This import fixes the error.
 import 'list_provider.dart';
 
 class ListScreen extends ConsumerWidget {
