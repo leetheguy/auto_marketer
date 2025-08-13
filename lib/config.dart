@@ -18,7 +18,7 @@ class AppConfig {
   // --- Webhook Configuration ---
   
   // Manually set this to true to use test webhooks.
-  static const bool useTestMode = false; 
+  static const bool useTestMode = false;
 
   static const String _baseUrl = 'https://n8n.leenathan.com';
   static const String _prodPath = 'webhook';
@@ -31,7 +31,6 @@ class AppConfig {
     // 'archive-article',
   };
 
-  
   // --- Initialization ---
   
   static Future<void> initialize() async {

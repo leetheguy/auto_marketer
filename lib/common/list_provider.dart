@@ -65,7 +65,9 @@ class ListProviderParams {
 
 // A "family" provider that can fetch different types of content lists.
 final listProvider = FutureProvider.family<List<ListItem>, ListProviderParams>((ref, params) async {
-  final workflow = await ref.watch(workflowProvider.future);
+  // Correctly access the nested .workflow property from the WorkflowData object.
+  final workflowData = await ref.watch(workflowProvider.future);
+  final workflow = workflowData.workflow;
   
   String rpcName;
   Map<String, dynamic> rpcParams;

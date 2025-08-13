@@ -29,9 +29,9 @@ final currentContentItemProvider =
 final actionsProvider =
     FutureProvider.family<List<WorkflowAction>, String>((ref, contentItemId) async {
   // Await the results of our two async dependencies.
-  final workflow = await ref.watch(workflowProvider.future);
+  final workflowData = await ref.watch(workflowProvider.future);
   final itemData = await ref.watch(currentContentItemProvider(contentItemId).future);
 
-  // Now that we have the data, we can perform the lookup.
-  return workflow.getActionsFor(itemData.typeName, itemData.stateName);
+  // Correctly access the nested .workflow property before calling the helper method.
+  return workflowData.workflow.getActionsFor(itemData.typeName, itemData.stateName);
 });
