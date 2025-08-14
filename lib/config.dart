@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 // A helper function for conditional printing that won't show warnings.
 void debugLog(Object? message) {
+  // ignore: avoid_print
   if (!kReleaseMode) {
     // ignore: avoid_print
     print(message);
@@ -18,19 +19,15 @@ class AppConfig {
   // --- Webhook Configuration ---
   
   // Manually set this to true to use test webhooks.
-  static const bool useTestMode = false;
+  static const bool useTestMode = true; 
 
   static const String _baseUrl = 'https://n8n.leenathan.com';
   static const String _prodPath = 'webhook';
   static const String _testPath = 'webhook-test';
 
-  // The single source of truth for all command names
-  static const Set<String> webhookCommands = {
-    'create-article',
-    'create-idea',
-    // 'archive-article',
-  };
-
+  // The hardcoded command list has been removed.
+  // The workflow JSON is now the single source of truth.
+  
   // --- Initialization ---
   
   static Future<void> initialize() async {
@@ -42,9 +39,7 @@ class AppConfig {
   // --- Methods ---
   
   static String getWebhookUrl(String command) {
-    // This check ensures we don't try to build a URL for a non-existent command.
-    assert(webhookCommands.contains(command), 'Unknown webhook command: $command');
-    
+    // The assertion has been removed. The app now trusts the workflow definition.
     final path = useTestMode ? _testPath : _prodPath;
     return '$_baseUrl/$path/$command';
   }
