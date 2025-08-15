@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../main.dart';
 import '../workflow/workflow_models.dart';
 import '../workflow/workflow_provider.dart';
+import '../config.dart';
 
 // A simple data model for any item that can appear in a list.
 class ListItem {
@@ -24,7 +27,6 @@ class ListItem {
 
   factory ListItem.fromMap(Map<String, dynamic> map, Workflow workflow) {
     final typeName = map['type_name'] as String;
-    // Find the type info from the central workflow to get the correct icon.
     final typeInfo = workflow.types.firstWhere(
       (t) => t.name == typeName,
       orElse: () => workflow.types.first, // Fallback
@@ -63,30 +65,64 @@ class ListProviderParams {
   int get hashCode => typeName.hashCode ^ parentId.hashCode;
 }
 
-// A "family" provider that can fetch different types of content lists.
-final listProvider = FutureProvider.family<List<ListItem>, ListProviderParams>((ref, params) async {
-  // Correctly access the nested .workflow property from the WorkflowData object.
-  final workflowData = await ref.watch(workflowProvider.future);
-  final workflow = workflowData.workflow;
-  
-  String rpcName;
-  Map<String, dynamic> rpcParams;
+// A "family" StreamProvider that provides a real-time stream of content lists.
+final listProvider = StreamProvider.family<List<ListItem>, ListProviderParams>((ref, params) {
+  final controller = StreamController<List<ListItem>>();
 
-  if (params.parentId != null) {
-    rpcName = 'get_child_content_items';
-    rpcParams = {'p_parent_id': params.parentId};
-  } else if (params.typeName != null) {
-    rpcName = 'get_content_items_by_type';
-    rpcParams = {'p_type_name': params.typeName};
-  } else {
-    throw ArgumentError('ListProvider requires either a typeName or a parentId.');
+  Future<void> fetchList() async {
+    // Await the workflow data directly from the main async provider.
+    final workflowData = await ref.read(workflowProvider.future);
+    final workflow = workflowData.workflow;
+
+    String rpcName;
+    Map<String, dynamic> rpcParams;
+
+    if (params.parentId != null) {
+      rpcName = 'get_child_content_items';
+      rpcParams = {'p_parent_id': params.parentId};
+    } else if (params.typeName != null) {
+      rpcName = 'get_content_items_by_type';
+      rpcParams = {'p_type_name': params.typeName};
+    } else {
+      controller.addError(ArgumentError('ListProvider requires either a typeName or a parentId.'));
+      return;
+    }
+
+    try {
+      final response = await supabase.rpc(rpcName, params: rpcParams);
+      final items = (response as List).map((map) => ListItem.fromMap(map, workflow)).toList();
+      if (!controller.isClosed) {
+        controller.add(items);
+      }
+    } catch (e) {
+      debugLog('Error fetching list: $e');
+      if (!controller.isClosed) {
+        controller.addError(e);
+      }
+    }
   }
 
-  final response = await supabase.rpc(rpcName, params: rpcParams);
+  // Fetch the initial list.
+  fetchList();
 
-  final items = (response as List).map((map) {
-    return ListItem.fromMap(map, workflow);
-  }).toList();
+  // Subscribe to changes on the content_items table.
+  final channel = supabase.channel('public:content_items');
+  channel.onPostgresChanges(
+    event: PostgresChangeEvent.all,
+    schema: 'public',
+    table: 'content_items',
+    callback: (payload) {
+      debugLog('Realtime update received for content_items. Refetching list.');
+      fetchList();
+    },
+  ).subscribe();
 
-  return items;
+  // When the provider is disposed, close the controller and unsubscribe.
+  ref.onDispose(() {
+    debugLog('Disposing listProvider and unsubscribing from channel.');
+    supabase.removeChannel(channel);
+    controller.close();
+  });
+
+  return controller.stream;
 });
