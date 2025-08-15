@@ -53,7 +53,7 @@ class HomeScreen extends ConsumerWidget {
         ],
       ),
       body: workflowAsyncValue.when(
-        data: (workflowData) => Padding( // Now receives WorkflowData
+        data: (workflowData) => Padding(
           padding: const EdgeInsets.all(16.0),
           child: GridView.builder(
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -61,9 +61,9 @@ class HomeScreen extends ConsumerWidget {
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
             ),
-            itemCount: workflowData.workflow.types.length, // Access workflow property
+            itemCount: workflowData.workflow.types.length,
             itemBuilder: (context, index) {
-              final type = workflowData.workflow.types[index]; // Access workflow property
+              final type = workflowData.workflow.types[index];
               return HomeNavButton(
                 icon: type.icon,
                 label: type.name,
@@ -89,13 +89,11 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  // This method now correctly gets the workflowId from the provider.
+  // This method is now simpler and relies on the reactive StreamProvider.
   Future<void> _createNewIdea(BuildContext context, WidgetRef ref) async {
     const command = 'create-idea';
     final url = Uri.parse(AppConfig.getWebhookUrl(command));
-    print(url);
     try {
-      // Pass the selected account and workflow info to n8n
       final accountId = ref.read(selectedAccountIdProvider);
       final workflowData = await ref.read(workflowProvider.future);
       final workflowId = workflowData.id;
@@ -113,17 +111,15 @@ class HomeScreen extends ConsumerWidget {
         final Map<String, dynamic> responseData = json.decode(response.body);
         final String contentItemId = responseData['content_item_id'];
         
-        // Invalidate the 'Idea' list so it's fresh.
-        ref.invalidate(listProvider(const ListProviderParams(typeName: 'Idea')));
+        // The ref.invalidate call is no longer needed here.
+        // The StreamProvider will handle updating the list automatically.
 
         if (context.mounted) {
-          // 1. Push the Ideas list screen onto the stack.
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => const ListScreen(typeName: 'Idea'),
             ),
           );
-          // 2. Immediately push the Editor screen on top of the list screen.
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => EditorScreen(contentItemId: contentItemId),
