@@ -4,38 +4,51 @@ import '../config.dart';
 import '../main.dart';
 import '../common/list_provider.dart';
 import '../workflow/workflow_models.dart';
+import '../workflow/workflow_provider.dart';
 
 // The data model for our editor's state.
 class EditorState {
   EditorState({
     this.title = '',
     this.content = '',
+    this.sourceUrl,
+    this.thumbnailUrl,
     this.saveStatus = SaveStatus.saved,
     this.isLoading = true,
+    this.editorType = 'markdown',
     this.typeName = '',
     this.parentId,
   });
 
   final String title;
   final String content;
+  final String? sourceUrl;
+  final String? thumbnailUrl;
   final SaveStatus saveStatus;
   final bool isLoading;
+  final String editorType;
   final String typeName;
   final String? parentId;
 
   EditorState copyWith({
     String? title,
     String? content,
+    String? sourceUrl,
+    String? thumbnailUrl,
     SaveStatus? saveStatus,
     bool? isLoading,
+    String? editorType,
     String? typeName,
     String? parentId,
   }) {
     return EditorState(
       title: title ?? this.title,
       content: content ?? this.content,
+      sourceUrl: sourceUrl ?? this.sourceUrl,
+      thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
       saveStatus: saveStatus ?? this.saveStatus,
       isLoading: isLoading ?? this.isLoading,
+      editorType: editorType ?? this.editorType,
       typeName: typeName ?? this.typeName,
       parentId: parentId ?? this.parentId,
     );
@@ -54,7 +67,9 @@ class EditorNotifier extends AutoDisposeFamilyNotifier<EditorState, String> {
 
   Future<void> _fetchInitialData() async {
     try {
-      // First, fetch the content item itself to get its type and parent.
+      final workflowData = await ref.read(workflowProvider.future);
+      final workflow = workflowData.workflow;
+
       final itemResponse = await supabase
           .from('content_items')
           .select('type_name, parent_id')
@@ -63,24 +78,35 @@ class EditorNotifier extends AutoDisposeFamilyNotifier<EditorState, String> {
       
       final typeName = itemResponse['type_name'] as String;
       final parentId = itemResponse['parent_id'] as String?;
+      final typeInfo = workflow.types.firstWhere((t) => t.name == typeName);
 
-      // Then, fetch its latest content version.
       final versionResponse = await supabase.rpc(
         'get_latest_content_version',
         params: {'p_content_item_id': arg},
       );
       
+      // ADDED: Log the raw response to see what the database is sending.
+      debugLog('Raw version response: $versionResponse');
+
       if (versionResponse.isNotEmpty) {
         final data = versionResponse[0];
         state = state.copyWith(
           title: data['title'] ?? 'Untitled',
           content: data['content'] ?? '',
+          sourceUrl: data['source_url'],
+          thumbnailUrl: data['thumbnail_url'],
           isLoading: false,
+          editorType: typeInfo.editorType,
           typeName: typeName,
           parentId: parentId,
         );
       } else {
-        state = state.copyWith(isLoading: false, typeName: typeName, parentId: parentId);
+        state = state.copyWith(
+          isLoading: false,
+          editorType: typeInfo.editorType,
+          typeName: typeName,
+          parentId: parentId,
+        );
       }
     } catch (e) {
       debugLog('Error fetching initial text: $e');
@@ -109,7 +135,7 @@ class EditorNotifier extends AutoDisposeFamilyNotifier<EditorState, String> {
         'p_content_item_id': arg,
         'p_title': state.title,
         'p_content': state.content,
-        'p_author_signature': 'user' // Placeholder signature
+        'p_author_signature': 'user'
       });
       
       // Invalidate the correct list provider so it refreshes.

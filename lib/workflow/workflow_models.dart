@@ -7,6 +7,7 @@ const Map<String, IconData> iconMap = {
   'article_outlined': Icons.article_outlined,
   'movie_outlined': Icons.movie_outlined,
   'campaign_outlined': Icons.campaign_outlined,
+  'image_outlined': Icons.image_outlined,
   'default': Icons.help_outline,
 };
 
@@ -33,11 +34,13 @@ class WorkflowType {
     required this.name,
     required this.icon,
     required this.displayOrder,
+    required this.editorType, // Added editorType
     required this.states,
   });
   final String name;
   final IconData icon;
   final int displayOrder;
+  final String editorType; // Added editorType
   final List<WorkflowState> states;
 }
 
@@ -74,6 +77,7 @@ class Workflow {
         name: typeJson['name'],
         icon: iconMap[iconName] ?? Icons.help_outline,
         displayOrder: typeJson['display_order'],
+        editorType: typeJson['editor_type'] ?? 'markdown', // Added editorType
         states: states,
       );
     }).toList()
@@ -89,7 +93,6 @@ class Workflow {
       final state = type.states.firstWhere((s) => s.name == stateName);
       return state.actions;
     } catch (e) {
-      // If no matching type or state is found, return an empty list.
       return [];
     }
   }
