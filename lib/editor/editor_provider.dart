@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config.dart';
 import '../main.dart';
-import '../common/list_provider.dart';
+import '../list/list_provider.dart';
 import '../workflow/workflow_models.dart';
 import '../workflow/workflow_provider.dart';
 

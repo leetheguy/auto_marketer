@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart'; // We'll need this for uploads
 import '../config.dart';
-import 'action_provider.dart';
 import 'editor_provider.dart';
 import 'image_editor.dart';
 import 'markdown_editor.dart';
-import '../workflow/workflow_models.dart';
 
 class EditorScreen extends ConsumerStatefulWidget {
   const EditorScreen({
@@ -40,9 +36,9 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     super.dispose();
   }
   
-  Future<void> _executeAction(String command) async {
-    // ... (This method is unchanged)
-  }
+  // Future<void> _executeAction(String command) async {
+  //   // ... (This method is unchanged)
+  // }
 
   // New method to handle the image upload process.
   Future<void> _handleImageUpload() async {
