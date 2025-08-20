@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart'; // We'll need this for uploads
 import '../config.dart';
 import 'editor_provider.dart';
+import 'action_provider.dart';
 import 'image_editor.dart';
 import 'markdown_editor.dart';
 
@@ -36,9 +37,9 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     super.dispose();
   }
   
-  // Future<void> _executeAction(String command) async {
-  //   // ... (This method is unchanged)
-  // }
+  Future<void> _executeAction(String command) async {
+    // ... (This method is unchanged)
+  }
 
   // New method to handle the image upload process.
   Future<void> _handleImageUpload() async {
@@ -82,9 +83,33 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     );
   }
 
-  Widget _buildGlobalMenuBar() {
-    // ... (This method is unchanged)
-    return Container(); // Placeholder
+Widget _buildGlobalMenuBar() {
+    // Watch the actionsProvider for the current content item.
+    final actionsValue = ref.watch(actionsProvider(widget.contentItemId));
+
+    // Use .when() to handle loading, error, and data states.
+    return actionsValue.when(
+      data: (actions) => Row(
+        children: actions.map((action) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4.0),
+            child: ElevatedButton(
+              onPressed: () => _executeAction(action.command),
+              child: Text(action.label),
+            ),
+          );
+        }).toList(),
+      ),
+      error: (err, stack) => const Icon(Icons.error_outline, color: Colors.red),
+      loading: () => const Padding(
+        padding: EdgeInsets.only(right: 16.0),
+        child: SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      ),
+    );
   }
 
   Widget _buildEditorBody(EditorState editorState, EditorNotifier editorNotifier) {
