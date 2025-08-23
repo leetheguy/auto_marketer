@@ -86,7 +86,7 @@ class EditorNotifier extends AutoDisposeFamilyNotifier<EditorState, String> {
       );
       
       // ADDED: Log the raw response to see what the database is sending.
-      debugLog('Raw version response: $versionResponse');
+      consoleInfo('Raw version response: $versionResponse');
 
       if (versionResponse.isNotEmpty) {
         final data = versionResponse[0];
@@ -109,7 +109,7 @@ class EditorNotifier extends AutoDisposeFamilyNotifier<EditorState, String> {
         );
       }
     } catch (e) {
-      debugLog('Error fetching initial text: $e');
+      consoleInfo('Error fetching initial text: $e');
       state = state.copyWith(isLoading: false);
     }
   }
@@ -142,10 +142,10 @@ class EditorNotifier extends AutoDisposeFamilyNotifier<EditorState, String> {
       final params = ListProviderParams(typeName: state.typeName, parentId: state.parentId);
       ref.invalidate(listProvider(params));
       
-      debugLog('Changes saved.');
+      consoleInfo('Changes saved.');
       state = state.copyWith(saveStatus: SaveStatus.saved);
     } catch (e) {
-      debugLog('Error saving changes: $e');
+      consoleInfo('Error saving changes: $e');
       state = state.copyWith(saveStatus: SaveStatus.unsaved);
     }
   }

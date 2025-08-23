@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 // A helper function for conditional printing that won't show warnings.
-void debugLog(Object? message) {
+void consoleInfo(Object? message) {
   // ignore: avoid_print
   if (!kReleaseMode) {
     // ignore: avoid_print

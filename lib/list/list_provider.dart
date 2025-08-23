@@ -95,7 +95,7 @@ final listProvider = StreamProvider.family<List<ListItem>, ListProviderParams>((
         controller.add(items);
       }
     } catch (e) {
-      debugLog('Error fetching list: $e');
+      consoleInfo('Error fetching list: $e');
       if (!controller.isClosed) {
         controller.addError(e);
       }
@@ -112,14 +112,14 @@ final listProvider = StreamProvider.family<List<ListItem>, ListProviderParams>((
     schema: 'public',
     table: 'content_items',
     callback: (payload) {
-      debugLog('Realtime update received for content_items. Refetching list.');
+      consoleInfo('Realtime update received for content_items. Refetching list.');
       fetchList();
     },
   ).subscribe();
 
   // When the provider is disposed, close the controller and unsubscribe.
   ref.onDispose(() {
-    debugLog('Disposing listProvider and unsubscribing from channel.');
+    consoleInfo('Disposing listProvider and unsubscribing from channel.');
     supabase.removeChannel(channel);
     controller.close();
   });

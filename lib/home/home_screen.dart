@@ -1,12 +1,12 @@
-import 'dart:convert';
+import 'package:auto_marketer/config.dart';
+import 'package:auto_marketer/editor/editor_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart' as http;
 import '../list/list_screen.dart';
-import '../config.dart';
-import '../editor/editor_screen.dart';
 import 'nav_button.dart';
 import '../workflow/workflow_provider.dart';
+import '../services/action_service.dart';
+
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -90,46 +90,95 @@ class HomeScreen extends ConsumerWidget {
 
   // This method is now simpler and relies on the reactive StreamProvider.
   Future<void> _createNewIdea(BuildContext context, WidgetRef ref) async {
-    const command = 'create-idea';
-    final url = Uri.parse(AppConfig.getWebhookUrl(command));
-    try {
-      final accountId = ref.read(selectedAccountIdProvider);
-      final workflowData = await ref.read(workflowProvider.future);
-      final workflowId = workflowData.id;
+    final actionService = ref.read(actionServiceProvider);
+    final accountId = ref.read(selectedAccountIdProvider);
+    final workflowData = await ref.read(workflowProvider.future);
+    final workflowId = workflowData.id;
 
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'account_id': accountId,
-          'workflow_id': workflowId,
-        }),
-      );
+    final response = await actionService.createNewIdea(
+      accountId: accountId!,
+      workflowId: workflowId
+    );
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = json.decode(response.body);
-        final String contentItemId = responseData['content_item_id'];
-        
-        // The ref.invalidate call is no longer needed here.
-        // The StreamProvider will handle updating the list automatically.
+    consoleInfo(response);
 
-        if (context.mounted) {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => const ListScreen(typeName: 'Idea'),
-            ),
-          );
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => EditorScreen(contentItemId: contentItemId),
-            ),
-          );
-        }
-      } else {
-        debugLog('Failed to create item. Status: ${response.statusCode}');
+    if (response != null) {
+      if (context.mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => const ListScreen(typeName: 'Idea'),
+          ),
+        );
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => EditorScreen(contentItemId: response),
+          ),
+        );
       }
-    } catch (e) {
-      debugLog('Error calling create webhook: $e');
+    } else {
+      consoleInfo('Failed to create new idea.');
     }
+
+
+    //   if (context.mounted) {
+    //     Navigator.of(context).push(
+    //       MaterialPageRoute(
+    //         builder: (context) => const ListScreen(typeName: 'Idea'),
+    //       ),
+    //     );
+    //     Navigator.of(context).push(
+    //       MaterialPageRoute(
+    //         builder: (context) => EditorScreen(contentItemId: contentItemId),
+    //       ),
+    //     );
+    //   }
+    // } else {
+    //   consoleInfo('Failed to create item. Status: ${response.statusCode}');
+    // }
+    
+    // final actionService = ref.read(actionServiceProvider);
+
+
+    // const command = 'create-idea';
+    // final url = Uri.parse(AppConfig.getWebhookUrl(command));
+    // try {
+    //   final accountId = ref.read(selectedAccountIdProvider);
+    //   final workflowData = await ref.read(workflowProvider.future);
+    //   final workflowId = workflowData.id;
+
+    //   final response = await http.post(
+    //     url,
+    //     headers: {'Content-Type': 'application/json'},
+    //     body: json.encode({
+    //       'account_id': accountId,
+    //       'workflow_id': workflowId,
+    //     }),
+    //   );
+
+    //   if (response.statusCode == 200) {
+    //     final Map<String, dynamic> responseData = json.decode(response.body);
+    //     final String contentItemId = responseData['content_item_id'];
+        
+    //     // The ref.invalidate call is no longer needed here.
+    //     // The StreamProvider will handle updating the list automatically.
+
+    //     if (context.mounted) {
+    //       Navigator.of(context).push(
+    //         MaterialPageRoute(
+    //           builder: (context) => const ListScreen(typeName: 'Idea'),
+    //         ),
+    //       );
+    //       Navigator.of(context).push(
+    //         MaterialPageRoute(
+    //           builder: (context) => EditorScreen(contentItemId: contentItemId),
+    //         ),
+    //       );
+    //     }
+    //   } else {
+    //     consoleInfo('Failed to create item. Status: ${response.statusCode}');
+    //   }
+    // } catch (e) {
+    //   consoleInfo('Error calling create webhook: $e');
+    // }
   }
 }

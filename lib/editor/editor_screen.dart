@@ -6,6 +6,7 @@ import 'editor_provider.dart';
 import 'action_provider.dart';
 import 'image_editor.dart';
 import 'markdown_editor.dart';
+import '../services/action_service.dart';
 
 class EditorScreen extends ConsumerStatefulWidget {
   const EditorScreen({
@@ -36,10 +37,37 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     _contentController.dispose();
     super.dispose();
   }
-  
+
   Future<void> _executeAction(String command) async {
-    // ... (This method is unchanged)
+    final actionService = ref.read(actionServiceProvider);
+    await actionService.executeAction(
+      command: command,
+      contentItemId: widget.contentItemId,
+    );
   }
+
+  // Future<void> _executeAction(String command) async {
+    // ... (This method is unchanged)
+  // }
+  // Future<void> _executeAction(String command) async {
+  //   final url = AppConfig.getWebhookUrl(command);
+  //   try {
+  //     final response = await http.post(
+  //       Uri.parse(url),
+  //       headers: {'Content-Type': 'application/json'},
+  //       body: json.encode({'content_item_id': widget.contentItemId}),
+  //     );
+  //     if (response.statusCode == 200) {
+  //       consoleInfo('Action $command executed successfully.');
+  //       // Invalidate the provider to refetch the actions and update the UI.
+  //       ref.invalidate(actionsProvider(widget.contentItemId));
+  //     } else {
+  //       consoleInfo('Failed to execute action $command. Status: ${response.statusCode}');
+  //     }
+  //   } catch (e) {
+  //     consoleInfo('Error executing action $command: $e');
+  //   }
+  // }
 
   // New method to handle the image upload process.
   Future<void> _handleImageUpload() async {
@@ -50,7 +78,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
 
     // This is where you would call the 'upload-image' n8n webhook,
     // sending the image data as a multipart/form-data request.
-    debugLog('Image picked: ${image.path}');
+    consoleInfo('Image picked: ${image.path}');
     // For now, we'll just log it. The actual upload requires a more complex HTTP request.
   }
 
